@@ -3,7 +3,7 @@ import webbrowser
 import base64
 from tkinter import Tk, Menu, Label, Button, filedialog, messagebox, Toplevel, Text, END, Frame, Entry, CENTER
 from tkinter.ttk import Progressbar
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, UnidentifiedImageError
 from io import BytesIO
 
 class ImageConverterApp:
@@ -31,7 +31,7 @@ class ImageConverterApp:
                 'ready': "Bereit",
                 'help_title': "Hilfe",
                 'help_text': (
-                    "Dieses Tool ermöglicht es Ihnen, die Bilder aus den PK3-Dateien zu extrahieren.\n"
+                    "Dieses Tool ermöglicht es Ihnen, die Bilder von TGA zu JPG zu konventieren.\n"
                     "\n"
                     "Bitte geben Sie den Eingabeordner an.\n"
                     "Bitte geben Sie auch den Ausgabeordner an.\n"
@@ -51,12 +51,14 @@ class ImageConverterApp:
                 'select_folders': "Bitte wählen Sie sowohl den Eingabe- als auch den Ausgabeordner aus.",
                 'log_files_found': "Dateien gefunden: ",
                 'log_converted': " konvertiert.\n",
+                'log_skipped': " übersprungen.\n",
                 'finished': "Konvertierung abgeschlossen.\n",
                 'copy_right': "Rebels of Gaming © 2021 - 2024",
                 'log': "Log",
                 'conversion_complete': "Konvertierung abgeschlossen!",
                 'open_output_folder': "Der Ausgabeordner wird jetzt geöffnet.",
-                'total_converted': "Insgesamt konvertierte Dateien: "
+                'total_converted': "Insgesamt konvertierte Dateien: ",
+                'total_skipped': "Insgesamt übersprungene Dateien: "
             },
             'en': {
                 'title': "Image Converter - TGA to JPG",
@@ -68,7 +70,7 @@ class ImageConverterApp:
                 'ready': "Ready",
                 'help_title': "Help",
                 'help_text': (
-                    "This tool allows you to extract images from the PK3 files.\n"
+                    "This tool allows you to convert images from TGA to JPG files.\n"
                     "\n"
                     "Please specify the input folder.\n"
                     "Please also specify the output folder.\n"
@@ -88,12 +90,14 @@ class ImageConverterApp:
                 'select_folders': "Please select both input and output folders.",
                 'log_files_found': "Files found: ",
                 'log_converted': " converted.\n",
+                'log_skipped': " skipped.\n",
                 'finished': "Conversion completed.\n",
                 'copy_right': "Rebels of Gaming © 2021 - 2024",
                 'log': "Log",
                 'conversion_complete': "Conversion completed!",
                 'open_output_folder': "The output folder will now be opened.",
-                'total_converted': "Total files converted: "
+                'total_converted': "Total files converted: ",
+                'total_skipped': "Total files skipped: "
             }
         }
         self.create_menu()
@@ -229,19 +233,27 @@ class ImageConverterApp:
         self.log_text.see(END)
 
         converted_files = 0
+        skipped_files = []
         for i, file_name in enumerate(tga_files):
-            img = Image.open(os.path.join(self.input_dir, file_name))
-            rgb_img = img.convert('RGB')
-            rgb_img.save(os.path.join(self.output_dir, file_name.replace('.tga', '.jpg')), 'JPEG')
-            self.progress['value'] = i + 1
-            self.log_text.insert(END, f"{file_name}{self.texts[self.language]['log_converted']}")
+            try:
+                img = Image.open(os.path.join(self.input_dir, file_name))
+                rgb_img = img.convert('RGB')
+                rgb_img.save(os.path.join(self.output_dir, file_name.replace('.tga', '.jpg')), 'JPEG')
+                self.progress['value'] = i + 1
+                self.log_text.insert(END, f"{file_name}{self.texts[self.language]['log_converted']}")
+                converted_files += 1
+            except (UnidentifiedImageError, OSError) as e:
+                self.log_text.insert(END, f"{file_name}{self.texts[self.language]['log_skipped']}")
+                skipped_files.append(file_name)
             self.log_text.see(END)
             self.root.update_idletasks()
-            converted_files += 1
 
         self.log_text.insert(END, self.texts[self.language]['finished'])
         self.log_text.see(END)
-        messagebox.showinfo(self.texts[self.language]['conversion_complete'], f"{self.texts[self.language]['total_converted']} {converted_files}\n{self.texts[self.language]['open_output_folder']}")
+        
+        skipped_files_str = "\n".join(skipped_files) if skipped_files else self.texts[self.language]['no_files_skipped']
+        messagebox.showinfo(self.texts[self.language]['conversion_complete'], f"{self.texts[self.language]['total_converted']} {converted_files}\n{self.texts[self.language]['total_skipped']} {len(skipped_files)}\n{skipped_files_str}\n{self.texts[self.language]['open_output_folder']}")
+        
         self.open_output_dir()
 
     def open_output_dir(self):
