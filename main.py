@@ -1,7 +1,7 @@
 import os
 import webbrowser
 import base64
-from tkinter import Tk, Menu, Label, Button, filedialog, messagebox, Toplevel, Text, END, Frame, Entry
+from tkinter import Tk, Menu, Label, Button, filedialog, messagebox, Toplevel, Text, END, Frame, Entry, CENTER
 from tkinter.ttk import Progressbar
 from PIL import Image, ImageTk
 from io import BytesIO
@@ -55,7 +55,8 @@ class ImageConverterApp:
                 'copy_right': "Rebels of Gaming © 2021 - 2024",
                 'log': "Log",
                 'conversion_complete': "Konvertierung abgeschlossen!",
-                'open_output_folder': "Der Ausgabeordner wird jetzt geöffnet."
+                'open_output_folder': "Der Ausgabeordner wird jetzt geöffnet.",
+                'total_converted': "Insgesamt konvertierte Dateien: "
             },
             'en': {
                 'title': "Image Converter - TGA to JPG",
@@ -91,7 +92,8 @@ class ImageConverterApp:
                 'copy_right': "Rebels of Gaming © 2021 - 2024",
                 'log': "Log",
                 'conversion_complete': "Conversion completed!",
-                'open_output_folder': "The output folder will now be opened."
+                'open_output_folder': "The output folder will now be opened.",
+                'total_converted': "Total files converted: "
             }
         }
         self.create_menu()
@@ -224,17 +226,22 @@ class ImageConverterApp:
         self.progress['maximum'] = total_files
 
         self.log_text.insert(END, f"{self.texts[self.language]['log_files_found']}{total_files}\n")
+        self.log_text.see(END)
 
+        converted_files = 0
         for i, file_name in enumerate(tga_files):
             img = Image.open(os.path.join(self.input_dir, file_name))
             rgb_img = img.convert('RGB')
             rgb_img.save(os.path.join(self.output_dir, file_name.replace('.tga', '.jpg')), 'JPEG')
             self.progress['value'] = i + 1
             self.log_text.insert(END, f"{file_name}{self.texts[self.language]['log_converted']}")
+            self.log_text.see(END)
             self.root.update_idletasks()
+            converted_files += 1
 
         self.log_text.insert(END, self.texts[self.language]['finished'])
-        messagebox.showinfo(self.texts[self.language]['conversion_complete'], self.texts[self.language]['open_output_folder'])
+        self.log_text.see(END)
+        messagebox.showinfo(self.texts[self.language]['conversion_complete'], f"{self.texts[self.language]['total_converted']} {converted_files}\n{self.texts[self.language]['open_output_folder']}")
         self.open_output_dir()
 
     def open_output_dir(self):
